@@ -702,7 +702,8 @@ html[data-theme="light"] .login-card{box-shadow:0 24px 70px rgba(17,17,17,.12)}
         Ainda não possui acesso?
         <button type="button" id="showRegister" style="border:0;background:none;color:var(--orange);font-weight:800;padding:0">CRIAR CONTA</button>
       </p>
-      <p class="login-note">Nesta versão, as contas ficam salvas neste navegador.</p>
+      <button class="login-btn google-login" id="googleLogin" type="button">CONTINUAR COM GOOGLE</button>
+      <p class="login-note">Seus dados ficam protegidos e sincronizados na nuvem.</p>
     </div>
 
     <!-- REGISTRO -->
@@ -950,7 +951,7 @@ html[data-theme="light"] .login-card{box-shadow:0 24px 70px rgba(17,17,17,.12)}
 <div class="toast" id="toast"></div>
 
 <script>
-const PRODUCTS = [
+let PRODUCTS = [
   {id:'rifle', name:'Munição de Fuzil', price:165, partner:143, unit:'a unidade'},
   {id:'sub', name:'Munição de Sub', price:120, partner:108, unit:'a unidade'},
   {id:'pistol', name:'Munição de Pistola', price:90, partner:78, unit:'a unidade'},
@@ -959,14 +960,36 @@ const PRODUCTS = [
 ];
 
 const KEY='vendetta_rp_data_v1';
-let state=JSON.parse(localStorage.getItem(KEY)||'null')||{
+const legacyState=JSON.parse(localStorage.getItem(KEY)||'null')||{
   sales:[],orders:[],user:'',users:[]
 };
+let state={sales:[],orders:[],user:'',users:[]};
 if(!Array.isArray(state.users)) state.users=[];
 let saleMode='clean';
 let priceMode='standard';
 
-function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+let bridgeId=0;
+const bridgePending=new Map();
+function cloud(action,payload={}){
+  return new Promise((resolve,reject)=>{
+    const id=String(++bridgeId);bridgePending.set(id,{resolve,reject});
+    parent.postMessage({source:'vendetta-frame',id,action,payload},location.origin);
+    setTimeout(()=>{if(bridgePending.has(id)){bridgePending.delete(id);reject(new Error('A conexão demorou mais que o esperado.'));}},20000);
+  });
+}
+window.addEventListener('message',event=>{
+  if(event.origin!==location.origin||event.data?.source!=='vendetta-cloud')return;
+  const pending=bridgePending.get(event.data.id);if(!pending)return;
+  bridgePending.delete(event.data.id);
+  event.data.ok?pending.resolve(event.data.data):pending.reject(new Error(event.data.error||'Operação não concluída.'));
+});
+function hydrate(data){
+  if(!data)return false;
+  state={sales:data.sales||[],orders:data.orders||[],user:data.user||'',users:[]};
+  if(Array.isArray(data.products)&&data.products.length)PRODUCTS=data.products;
+  return true;
+}
+function save(){}
 function money(n){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(n||0)}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove('show'),2400)}
@@ -994,9 +1017,9 @@ function weekOf(dateStr){
 }
 function isCurrentWeek(item){return weekOf(item.date||item.createdAt)===currentWeekKey()}
 
-function initLogin(){
-  const saved=localStorage.getItem('vendetta_logged_user');
-  if(saved && state.users.some(u=>u.name===saved)){state.user=saved;showApp();}
+async function initLogin(){
+  try{const data=await cloud('initialize',{legacy:legacyState});if(hydrate(data)){showApp();}}
+  catch(error){toast(error.message);}
 
   ['loginPass','registerPass','registerPass2'].forEach(id=>{
     document.getElementById(id).addEventListener('input',e=>{
@@ -1016,7 +1039,7 @@ function initLogin(){
     document.getElementById('loginError').style.display='none';
   };
 
-  document.getElementById('registerForm').addEventListener('submit',e=>{
+  document.getElementById('registerForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const name=document.getElementById('registerName').value.trim();
     const pass=document.getElementById('registerPass').value;
@@ -1035,48 +1058,31 @@ function initLogin(){
       err.textContent='As senhas não são iguais.';
       err.style.display='block'; return;
     }
-    if(state.users.some(u=>u.name.toLowerCase()===name.toLowerCase())){
-      err.textContent='Já existe uma conta com esse nome.';
-      err.style.display='block'; return;
-    }
-
-    state.users.push({name,pass,createdAt:Date.now()});
-    save();
-    document.getElementById('loginName').value=name;
-    document.getElementById('loginPass').value='';
-    document.getElementById('registerForm').reset();
-    err.style.display='none';
-    document.getElementById('registerCard').classList.add('hidden');
-    document.getElementById('loginCard').classList.remove('hidden');
-    toast('Conta criada. Agora faça seu login.');
-    document.getElementById('loginPass').focus();
+    try{
+      const data=await cloud('register',{name,pass,legacy:legacyState});
+      hydrate(data);localStorage.removeItem(KEY);err.style.display='none';showApp();toast('Conta criada com sucesso.');
+    }catch(error){err.textContent=error.message.includes('already')?'Já existe uma conta com esse nome.':error.message;err.style.display='block';}
   });
 
-  document.getElementById('loginForm').addEventListener('submit',e=>{
+  document.getElementById('loginForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const name=document.getElementById('loginName').value.trim();
     const pass=document.getElementById('loginPass').value;
     const err=document.getElementById('loginError');
-    const user=state.users.find(u=>u.name.toLowerCase()===name.toLowerCase() && u.pass===pass);
-
-    if(!user){
-      err.textContent=state.users.length
-        ? 'Nome ou senha incorretos.'
-        : 'Nenhuma conta cadastrada. Clique em “CRIAR CONTA”.';
-      err.style.display='block';
-      return;
-    }
     if(!/^\d{6}$/.test(pass)){
       err.textContent='Digite uma senha numérica com exatamente 6 dígitos.';
       err.style.display='block'; return;
     }
 
-    err.style.display='none';
-    state.user=user.name;
-    save();
-    localStorage.setItem('vendetta_logged_user',user.name);
-    showApp();
+    try{
+      const data=await cloud('login',{name,pass,legacy:legacyState});
+      hydrate(data);localStorage.removeItem(KEY);err.style.display='none';showApp();
+    }catch(error){err.textContent='Nome ou senha incorretos.';err.style.display='block';}
   });
+  document.getElementById('googleLogin').onclick=async()=>{
+    try{const data=await cloud('google',{legacy:legacyState});if(hydrate(data)){localStorage.removeItem(KEY);showApp();}}
+    catch(error){toast(error.message);}
+  };
 }
 function showApp(){
   document.getElementById('loginScreen').classList.add('hidden');
@@ -1085,8 +1091,9 @@ function showApp(){
   document.getElementById('avatar').textContent=(state.user[0]||'V').toUpperCase();
   renderAll();
 }
-document.getElementById('logoutBtn').onclick=()=>{
-  localStorage.removeItem('vendetta_logged_user');
+document.getElementById('logoutBtn').onclick=async()=>{
+  try{await cloud('logout');}catch(error){toast(error.message);return;}
+  state={sales:[],orders:[],user:'',users:[]};
   document.getElementById('app').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginPass').value='';
@@ -1157,12 +1164,12 @@ function calcTotal(){
   document.getElementById('calcDetails').innerHTML=lines.length?`${lines.join(' • ')}<br>Tabela: ${priceMode==='partner'?'Parceria':'Normal'} • Base: ${money(base)} ${saleMode==='dirty'?`• Adicional sujo: ${money(base*.3)}`:''}`:'Selecione produtos para calcular.';
   return {base,total};
 }
-document.getElementById('saveSale').onclick=()=>{
+document.getElementById('saveSale').onclick=async()=>{
   const rows=[...document.querySelectorAll('#calcItems > .calc-grid')];
   const items=rows.map(r=>({product:r.querySelector('.calc-product').value,qty:Math.max(1,+r.querySelector('.calc-qty').value||1)}));
   const {base,total}=calcTotal();
   if(!items.length){toast('Adicione pelo menos um item.');return}
-  state.sales.push({
+  const sale={
     id:crypto.randomUUID(),createdAt:Date.now(),date:new Date().toISOString(),
     seller:document.getElementById('saleSeller').value.trim()||state.user,
     buyer:document.getElementById('saleBuyer').value.trim(),
@@ -1170,8 +1177,9 @@ document.getElementById('saveSale').onclick=()=>{
     family:document.getElementById('saleFamily').value.trim(),
     note:document.getElementById('saleNote').value.trim(),
     mode:saleMode,priceMode,base,total,items
-  });
-  save();toast('Venda registrada com sucesso.');
+  };
+  try{await cloud('saveSale',{sale});state.sales.push(sale);toast('Venda registrada com sucesso.');}
+  catch(error){toast('Não foi possível salvar a venda.');return;}
   ['saleBuyer','salePhone','saleFamily','saleNote'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('calcItems').innerHTML='';addCalcRow();goTo('sales');
 };
@@ -1182,17 +1190,19 @@ function renderOrderProducts(){
 }
 document.getElementById('newOrderBtn').onclick=()=>document.getElementById('orderForm').classList.toggle('hidden');
 document.getElementById('cancelOrder').onclick=()=>document.getElementById('orderForm').classList.add('hidden');
-document.getElementById('saveOrder').onclick=()=>{
+document.getElementById('saveOrder').onclick=async()=>{
   const q=Math.max(1,+document.getElementById('orderQty').value||1),p=product(document.getElementById('orderProduct').value);
   const base=p.price*q,mode=document.getElementById('orderMode').value,total=mode==='dirty'?base*1.3:base;
-  state.orders.push({
+  const order={
     id:crypto.randomUUID(),createdAt:Date.now(),date:new Date().toISOString(),
     day:document.getElementById('orderDay').value,seller:document.getElementById('orderSeller').value.trim()||state.user,
     buyer:document.getElementById('orderBuyer').value.trim(),phone:document.getElementById('orderPhone').value.trim(),
     family:document.getElementById('orderFamily').value.trim(),product:p.id,qty:q,mode,total,
     note:document.getElementById('orderNote').value.trim(),status:'pending'
-  });
-  save();toast('Encomenda adicionada.');document.getElementById('orderForm').classList.add('hidden');
+  };
+  try{await cloud('saveOrder',{order});state.orders.push(order);toast('Encomenda adicionada.');}
+  catch(error){toast('Não foi possível salvar a encomenda.');return;}
+  document.getElementById('orderForm').classList.add('hidden');
   ['orderSeller','orderBuyer','orderPhone','orderFamily','orderNote'].forEach(id=>document.getElementById(id).value='');
   renderOrders();
 };
@@ -1215,8 +1225,8 @@ function renderOrders(){
     <td><button class="btn small danger" onclick="deleteOrder('${x.id}')">Excluir</button></td>
   </tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhuma encomenda encontrada nesta semana.</div>';
 }
-function changeOrderStatus(id,status){const x=state.orders.find(x=>x.id===id);if(x){x.status=status;save();renderOrders();toast('Status atualizado.');}}
-function deleteOrder(id){if(confirm('Excluir esta encomenda?')){state.orders=state.orders.filter(x=>x.id!==id);save();renderOrders();toast('Encomenda excluída.');}}
+async function changeOrderStatus(id,status){const x=state.orders.find(x=>x.id===id);if(x){const previous=x.status;x.status=status;renderOrders();try{await cloud('updateOrder',{id,status});toast('Status atualizado.');}catch(error){x.status=previous;renderOrders();toast('Não foi possível atualizar.');}}}
+async function deleteOrder(id){if(confirm('Excluir esta encomenda?')){try{await cloud('deleteOrder',{id});state.orders=state.orders.filter(x=>x.id!==id);renderOrders();toast('Encomenda excluída.');}catch(error){toast('Não foi possível excluir.');}}}
 document.getElementById('orderSearch').addEventListener('input',renderOrders);
 
 /* SALES */
@@ -1238,10 +1248,10 @@ function renderSales(){
     <td><b>${money(x.total)}</b></td><td><button class="btn small danger" onclick="deleteSale('${x.id}')">Excluir</button></td>
   </tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhuma venda encontrada nesta semana.</div>';
 }
-function deleteSale(id){if(confirm('Excluir este registro de venda?')){state.sales=state.sales.filter(x=>x.id!==id);save();renderSales();renderDashboard();toast('Venda excluída.');}}
+async function deleteSale(id){if(confirm('Excluir este registro de venda?')){try{await cloud('deleteSale',{id});state.sales=state.sales.filter(x=>x.id!==id);renderSales();renderDashboard();toast('Venda excluída.');}catch(error){toast('Não foi possível excluir.');}}}
 document.getElementById('salesSearch').addEventListener('input',renderSales);
-document.getElementById('clearSales').onclick=()=>{
-  if(confirm('Isso excluirá todas as vendas armazenadas. Continuar?')){state.sales=[];save();renderSales();renderDashboard();toast('Vendas removidas.');}
+document.getElementById('clearSales').onclick=async()=>{
+  if(confirm('Isso excluirá todas as vendas armazenadas. Continuar?')){try{await cloud('clearSales',{ids:state.sales.map(x=>x.id)});state.sales=[];renderSales();renderDashboard();toast('Vendas removidas.');}catch(error){toast('Não foi possível remover as vendas.');}}
 };
 
 /* PRODUCTS */
