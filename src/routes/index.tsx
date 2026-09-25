@@ -52,35 +52,35 @@ function Index() {
         userId,
         user: displayName,
         sales: (salesResult.data ?? []).map((sale) => ({
-          id: sale.id,
+          id: sale["id"],
           createdAt: new Date(sale.created_at).getTime(),
           date: sale.sale_date,
-          seller: sale.seller,
-          buyer: sale.buyer,
-          phone: sale.phone,
-          family: sale.family,
-          note: sale.note,
-          mode: sale.mode,
+          seller: sale["seller"],
+          buyer: sale["buyer"],
+          phone: sale["phone"],
+          family: sale["family"],
+          note: sale["note"],
+          mode: sale["mode"],
           priceMode: sale.price_mode,
-          base: Number(sale.base),
-          total: Number(sale.total),
-          items: Array.isArray(sale.items) ? sale.items : [],
+          base: Number(sale["base"]),
+          total: Number(sale["total"]),
+          items: Array.isArray(sale["items"]) ? sale["items"] : [],
         })),
         orders: (ordersResult.data ?? []).map((order) => ({
-          id: order.id,
+          id: order["id"],
           createdAt: new Date(order.created_at).getTime(),
           date: order.order_date,
-          day: order.day,
-          seller: order.seller,
-          buyer: order.buyer,
-          phone: order.phone,
-          family: order.family,
-          product: order.product_id,
+          day: order["day"],
+          seller: order["seller"],
+          buyer: order["buyer"],
+          phone: order["phone"],
+          family: order["family"],
+          product: order["product"]_id,
           qty: order.quantity,
-          mode: order.mode,
-          total: Number(order.total),
-          note: order.note,
-          status: order.status,
+          mode: order["mode"],
+          total: Number(order["total"]),
+          note: order["note"],
+          status: order["status"],
         })),
         products: (productsResult.data ?? []).map((product) => ({
           id: product.id,
@@ -107,27 +107,27 @@ function Index() {
     ) => {
       const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       const sales = (legacy?.sales ?? []).map((sale) => ({
-        id: typeof sale.id === "string" && uuid.test(sale.id) ? sale.id : crypto.randomUUID(),
+        id: typeof sale["id"] === "string" && uuid.test(sale["id"]) ? sale["id"] : crypto.randomUUID(),
         created_by: userId,
-        created_at: new Date(Number(sale.createdAt) || Date.now()).toISOString(),
-        sale_date: typeof sale.date === "string" ? sale.date : new Date(Number(sale.createdAt) || Date.now()).toISOString(),
-        seller: String(sale.seller ?? ""), buyer: String(sale.buyer ?? ""), phone: String(sale.phone ?? ""),
-        family: String(sale.family ?? ""), note: String(sale.note ?? ""),
-        mode: sale.mode === "dirty" ? "dirty" : "clean",
-        price_mode: sale.priceMode === "partner" ? "partner" : "standard",
-        base: Number(sale.base) || 0, total: Number(sale.total) || 0,
-        items: Array.isArray(sale.items) ? sale.items : [],
+        created_at: new Date(Number(sale["createdAt"]) || Date.now()).toISOString(),
+        sale_date: typeof sale["date"] === "string" ? sale["date"] : new Date(Number(sale["createdAt"]) || Date.now()).toISOString(),
+        seller: String(sale["seller"] ?? ""), buyer: String(sale["buyer"] ?? ""), phone: String(sale["phone"] ?? ""),
+        family: String(sale["family"] ?? ""), note: String(sale["note"] ?? ""),
+        mode: sale["mode"] === "dirty" ? "dirty" : "clean",
+        price_mode: sale["priceMode"] === "partner" ? "partner" : "standard",
+        base: Number(sale["base"]) || 0, total: Number(sale["total"]) || 0,
+        items: Array.isArray(sale["items"]) ? sale["items"] : [],
       }));
       const orders = (legacy?.orders ?? []).map((order) => ({
-        id: typeof order.id === "string" && uuid.test(order.id) ? order.id : crypto.randomUUID(),
+        id: typeof order["id"] === "string" && uuid.test(order["id"]) ? order["id"] : crypto.randomUUID(),
         created_by: userId,
-        created_at: new Date(Number(order.createdAt) || Date.now()).toISOString(),
-        order_date: typeof order.date === "string" ? order.date : new Date(Number(order.createdAt) || Date.now()).toISOString(),
-        day: String(order.day ?? ""), seller: String(order.seller ?? ""), buyer: String(order.buyer ?? ""),
-        phone: String(order.phone ?? ""), family: String(order.family ?? ""), product_id: String(order.product ?? "rifle"),
-        quantity: Math.max(1, Number(order.qty) || 1), mode: order.mode === "dirty" ? "dirty" : "clean",
-        total: Number(order.total) || 0, note: String(order.note ?? ""),
-        status: order.status === "done" || order.status === "cancelled" ? order.status : "pending",
+        created_at: new Date(Number(order["createdAt"]) || Date.now()).toISOString(),
+        order_date: typeof order["date"] === "string" ? order["date"] : new Date(Number(order["createdAt"]) || Date.now()).toISOString(),
+        day: String(order["day"] ?? ""), seller: String(order["seller"] ?? ""), buyer: String(order["buyer"] ?? ""),
+        phone: String(order["phone"] ?? ""), family: String(order["family"] ?? ""), product_id: String(order["product"] ?? "rifle"),
+        quantity: Math.max(1, Number(order["qty"]) || 1), mode: order["mode"] === "dirty" ? "dirty" : "clean",
+        total: Number(order["total"]) || 0, note: String(order["note"] ?? ""),
+        status: order["status"] === "done" || order["status"] === "cancelled" ? order["status"] : "pending",
       }));
       if (sales.length) {
         const { error } = await supabase.from("sales").upsert(sales, { onConflict: "id", ignoreDuplicates: true });
@@ -142,7 +142,7 @@ function Index() {
     const authenticatedData = async (legacy?: { sales?: Array<Record<string, unknown>>; orders?: Array<Record<string, unknown>> }, fallbackName?: string) => {
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) return null;
-      const metadataName = typeof data.user.user_metadata?.display_name === "string" ? data.user.user_metadata.display_name : "";
+      const metadataName = typeof data.user.user_metadata?.["display_name"] === "string" ? data.user.user_metadata.display_name : "";
       const displayName = fallbackName || metadataName || data.user.email?.split("@")[0] || "Usuário";
       await ensureProfile(data.user.id, displayName);
       await importLegacyData(data.user.id, legacy);
@@ -156,12 +156,12 @@ function Index() {
       const { id, action, payload = {} } = message;
       try {
         if (action === "initialize") {
-          reply(id, true, await authenticatedData(payload.legacy as never));
+          reply(id, true, await authenticatedData(payload["legacy"] as never));
           return;
         }
         if (action === "register") {
-          const name = String(payload.name ?? "").trim();
-          const password = String(payload.pass ?? "");
+          const name = String(payload["name"] ?? "").trim();
+          const password = String(payload["pass"] ?? "");
           const { data, error } = await supabase.auth.signUp({
             email: accountEmail(name), password,
             options: { data: { display_name: name }, emailRedirectTo: window.location.origin },
@@ -169,67 +169,70 @@ function Index() {
           if (error) throw error;
           if (!data.user) throw new Error("Não foi possível criar a conta.");
           await ensureProfile(data.user.id, name);
-          reply(id, true, await authenticatedData(payload.legacy as never, name));
+          reply(id, true, await authenticatedData(payload["legacy"] as never, name));
           return;
         }
         if (action === "login") {
-          const name = String(payload.name ?? "").trim();
-          const password = String(payload.pass ?? "");
-          let result = await supabase.auth.signInWithPassword({ email: accountEmail(name), password });
-          const legacyUsers = Array.isArray((payload.legacy as { users?: unknown[] } | undefined)?.users)
-            ? (payload.legacy as { users: Array<{ name?: string; pass?: string }> }).users
+          const name = String(payload["name"] ?? "").trim();
+          const password = String(payload["pass"] ?? "");
+          const signIn = await supabase.auth.signInWithPassword({ email: accountEmail(name), password });
+          const legacyUsers = Array.isArray((payload["legacy"] as { users?: unknown[] } | undefined)?.users)
+            ? (payload["legacy"] as { users: Array<{ name?: string; pass?: string }> }).users
             : [];
           const legacyMatch = legacyUsers.some((user) => user.name?.toLowerCase() === name.toLowerCase() && user.pass === password);
-          if (result.error && legacyMatch) {
+          let authenticatedUser = signIn.data.user;
+          let authError = signIn.error;
+          if (authError && legacyMatch) {
             const signup = await supabase.auth.signUp({ email: accountEmail(name), password, options: { data: { display_name: name } } });
-            result = { data: signup.data, error: signup.error };
+            authenticatedUser = signup.data.user;
+            authError = signup.error;
           }
-          if (result.error || !result.data.user) throw result.error ?? new Error("Nome ou senha incorretos.");
-          await ensureProfile(result.data.user.id, name);
-          reply(id, true, await authenticatedData(payload.legacy as never, name));
+          if (authError || !authenticatedUser) throw authError ?? new Error("Nome ou senha incorretos.");
+          await ensureProfile(authenticatedUser.id, name);
+          reply(id, true, await authenticatedData(payload["legacy"] as never, name));
           return;
         }
         if (action === "google") {
           const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
           if (result.error) throw result.error;
-          if (!result.redirected) reply(id, true, await authenticatedData(payload.legacy as never));
+          if (!result.redirected) reply(id, true, await authenticatedData(payload["legacy"] as never));
           return;
         }
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError || !userData.user) throw new Error("Sua sessão expirou. Entre novamente.");
         if (action === "saveSale") {
-          const sale = payload.sale as Record<string, unknown>;
+          const sale = payload["sale"] as Record<string, unknown>;
           const { error } = await supabase.from("sales").insert({
-            id: String(sale.id), created_by: userData.user.id,
-            created_at: new Date(Number(sale.createdAt) || Date.now()).toISOString(), sale_date: String(sale.date),
-            seller: String(sale.seller ?? ""), buyer: String(sale.buyer ?? ""), phone: String(sale.phone ?? ""),
-            family: String(sale.family ?? ""), note: String(sale.note ?? ""), mode: String(sale.mode),
-            price_mode: String(sale.priceMode ?? "standard"), base: Number(sale.base), total: Number(sale.total),
-            items: sale.items as never,
+            id: String(sale["id"]), created_by: userData.user.id,
+            created_at: new Date(Number(sale["createdAt"]) || Date.now()).toISOString(), sale_date: String(sale["date"]),
+            seller: String(sale["seller"] ?? ""), buyer: String(sale["buyer"] ?? ""), phone: String(sale["phone"] ?? ""),
+            family: String(sale["family"] ?? ""), note: String(sale["note"] ?? ""), mode: String(sale["mode"]),
+            price_mode: String(sale["priceMode"] ?? "standard"), base: Number(sale["base"]), total: Number(sale["total"]),
+            items: sale["items"] as never,
           });
           if (error) throw error;
         } else if (action === "saveOrder") {
-          const order = payload.order as Record<string, unknown>;
+          const order = payload["order"] as Record<string, unknown>;
           const { error } = await supabase.from("orders").insert({
-            id: String(order.id), created_by: userData.user.id,
-            created_at: new Date(Number(order.createdAt) || Date.now()).toISOString(), order_date: String(order.date),
-            day: String(order.day ?? ""), seller: String(order.seller ?? ""), buyer: String(order.buyer ?? ""),
-            phone: String(order.phone ?? ""), family: String(order.family ?? ""), product_id: String(order.product),
-            quantity: Number(order.qty), mode: String(order.mode), total: Number(order.total), note: String(order.note ?? ""),
-            status: String(order.status ?? "pending"),
+            id: String(order["id"]), created_by: userData.user.id,
+            created_at: new Date(Number(order["createdAt"]) || Date.now()).toISOString(), order_date: String(order["date"]),
+            day: String(order["day"] ?? ""), seller: String(order["seller"] ?? ""), buyer: String(order["buyer"] ?? ""),
+            phone: String(order["phone"] ?? ""), family: String(order["family"] ?? ""), product_id: String(order["product"]),
+            quantity: Number(order["qty"]), mode: String(order["mode"]), total: Number(order["total"]), note: String(order["note"] ?? ""),
+            status: String(order["status"] ?? "pending"),
           });
           if (error) throw error;
         } else if (action === "updateOrder") {
-          const { error } = await supabase.from("orders").update({ status: String(payload.status) }).eq("id", String(payload.id));
+          const { error } = await supabase.from("orders").update({ status: String(payload["status"]) }).eq("id", String(payload["id"]));
           if (error) throw error;
         } else if (action === "deleteOrder") {
-          const { error } = await supabase.from("orders").delete().eq("id", String(payload.id));
+          const { error } = await supabase.from("orders").delete().eq("id", String(payload["id"]));
           if (error) throw error;
         } else if (action === "deleteSale") {
-          const { error } = await supabase.from("sales").delete().eq("id", String(payload.id));
+          const { error } = await supabase.from("sales").delete().eq("id", String(payload["id"]));
           if (error) throw error;
         } else if (action === "clearSales") {
-          const ids = Array.isArray(payload.ids) ? payload.ids.map(String) : [];
+          const ids = Array.isArray(payload["id"]s) ? payload["id"]s.map(String) : [];
           if (ids.length) {
             const { error } = await supabase.from("sales").delete().in("id", ids);
             if (error) throw error;
