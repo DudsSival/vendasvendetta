@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- The uploaded VENDETTA application is served as a self-contained page inside the TanStack index frame to preserve its existing local data and behavior.
