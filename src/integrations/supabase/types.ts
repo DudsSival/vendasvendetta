@@ -14,16 +14,209 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          buyer: string
+          created_at: string
+          created_by: string
+          day: string
+          family: string
+          id: string
+          mode: string
+          note: string
+          order_date: string
+          phone: string
+          product_id: string
+          quantity: number
+          seller: string
+          status: string
+          total: number
+        }
+        Insert: {
+          buyer?: string
+          created_at?: string
+          created_by: string
+          day?: string
+          family?: string
+          id: string
+          mode: string
+          note?: string
+          order_date?: string
+          phone?: string
+          product_id: string
+          quantity: number
+          seller?: string
+          status?: string
+          total: number
+        }
+        Update: {
+          buyer?: string
+          created_at?: string
+          created_by?: string
+          day?: string
+          family?: string
+          id?: string
+          mode?: string
+          note?: string
+          order_date?: string
+          phone?: string
+          product_id?: string
+          quantity?: number
+          seller?: string
+          status?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          partner_price: number
+          price: number
+          sort_order: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name: string
+          partner_price: number
+          price: number
+          sort_order?: number
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          partner_price?: number
+          price?: number
+          sort_order?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          normalized_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id: string
+          normalized_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          normalized_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sales: {
+        Row: {
+          base: number
+          buyer: string
+          created_at: string
+          created_by: string
+          family: string
+          id: string
+          items: Json
+          mode: string
+          note: string
+          phone: string
+          price_mode: string
+          sale_date: string
+          seller: string
+          total: number
+        }
+        Insert: {
+          base: number
+          buyer?: string
+          created_at?: string
+          created_by: string
+          family?: string
+          id: string
+          items?: Json
+          mode: string
+          note?: string
+          phone?: string
+          price_mode?: string
+          sale_date?: string
+          seller?: string
+          total: number
+        }
+        Update: {
+          base?: number
+          buyer?: string
+          created_at?: string
+          created_by?: string
+          family?: string
+          id?: string
+          items?: Json
+          mode?: string
+          note?: string
+          phone?: string
+          price_mode?: string
+          sale_date?: string
+          seller?: string
+          total?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +343,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

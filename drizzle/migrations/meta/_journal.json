@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790357292416,
+      "tag": "0000_create_vendetta_persistent_data",
+      "breakpoints": true
+    }
+  ]
 }
