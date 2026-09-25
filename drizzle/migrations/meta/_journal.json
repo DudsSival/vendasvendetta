@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790357292416,
+      "tag": "0000_create_vendetta_persistent_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790357390051,
+      "tag": "0001_restrict_role_function_access",
+      "breakpoints": true
+    }
+  ]
+}
