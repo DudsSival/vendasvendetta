@@ -533,6 +533,126 @@ main{padding-top:30px}
   .quick-nav .nav-btn .icon{display:none}
 }
 
+
+/* ===== POLISHED ACCESS SCREEN ===== */
+#loginScreen{
+  min-height:100dvh;
+  isolation:isolate;
+  display:grid;
+  place-items:center;
+  padding:clamp(24px,5vw,72px);
+  background:
+    linear-gradient(115deg,rgba(255,75,31,.10),transparent 42%),
+    radial-gradient(circle at 82% 18%,rgba(255,75,31,.12),transparent 24%),
+    var(--page);
+}
+#loginScreen::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  background-image:none;
+  opacity:1;
+}
+#loginScreen::after{
+  content:"V";
+  position:absolute;
+  z-index:-1;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-51%);
+  font:800 clamp(420px,70vw,980px)/.7 'Barlow Condensed',sans-serif;
+  color:rgba(255,75,31,.035);
+  pointer-events:none;
+}
+.login-theme-toggle{
+  position:absolute;
+  top:22px;
+  right:22px;
+  width:42px;
+  height:42px;
+  border:1px solid var(--stroke);
+  border-radius:10px;
+  background:var(--surface);
+  color:var(--text);
+  display:grid;
+  place-items:center;
+  font-size:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);
+  backdrop-filter:blur(14px);
+  z-index:3;
+}
+.login-wrap{
+  width:min(460px,100%);
+  padding:0;
+}
+.brand{margin-bottom:24px}
+.brand-mark{
+  width:82px;
+  height:82px;
+  border-radius:20px;
+  background-size:cover;
+  background-position:center;
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 18px 50px rgba(255,75,31,.24);
+  transform:none;
+}
+.brand h1{
+  margin:17px 0 5px;
+  font-size:48px;
+  color:var(--text);
+}
+.brand p{color:var(--text-muted)}
+.login-card{
+  padding:30px;
+  border-radius:20px;
+  background:color-mix(in oklab,var(--surface-solid) 88%,transparent);
+  border:1px solid var(--stroke);
+  box-shadow:0 24px 80px rgba(0,0,0,.30);
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+}
+.login-card h2{font-size:30px;color:var(--text)}
+.login-card .sub{color:var(--text-muted);margin-bottom:24px}
+.login-card .field label{color:var(--text-muted)}
+.login-card .field input{
+  height:50px;
+  border-radius:10px;
+  background:var(--surface-soft);
+  border-color:var(--stroke);
+  color:var(--text);
+}
+.login-card .field input::placeholder{color:var(--text-muted)}
+.login-btn{height:51px;border-radius:10px;box-shadow:0 12px 28px rgba(255,75,31,.24)}
+.login-note{color:var(--text-muted)}
+html[data-theme="light"] #loginScreen{
+  background:
+    linear-gradient(115deg,rgba(255,75,31,.10),transparent 42%),
+    radial-gradient(circle at 82% 18%,rgba(255,75,31,.10),transparent 24%),
+    #f4f4f1;
+}
+html[data-theme="light"] #loginScreen::after{color:rgba(255,75,31,.045)}
+html[data-theme="light"] .login-card{box-shadow:0 24px 70px rgba(17,17,17,.12)}
+@media(max-width:560px){
+  #loginScreen{padding:76px 18px 28px;align-items:start}
+  #loginScreen::after{font-size:125vw;top:38%}
+  .login-theme-toggle{top:16px;right:16px}
+  .brand{margin-bottom:18px}
+  .brand-mark{width:68px;height:68px;border-radius:17px}
+  .brand h1{font-size:40px;margin-top:13px}
+  .login-card{padding:24px 20px;border-radius:16px}
+}
+@media(max-height:720px){
+  #loginScreen{padding-top:62px;padding-bottom:22px}
+  .brand{margin-bottom:14px}
+  .brand-mark{width:60px;height:60px;border-radius:15px}
+  .brand h1{font-size:37px;margin:10px 0 3px}
+  .login-card{padding:22px}
+  .login-card .sub{margin-bottom:18px}
+  .field{margin-bottom:12px}
+  .login-note{margin-top:12px}
+}
+
 </style>
 </head>
 <body>
@@ -542,6 +662,7 @@ main{padding-top:30px}
 
 <!-- LOGIN -->
 <section id="loginScreen">
+  <button class="login-theme-toggle" id="loginThemeToggle" type="button" aria-label="Alternar tema" title="Alternar tema"><span id="loginThemeIcon">☾</span></button>
   <div class="login-wrap">
     <div class="brand">
       <div class="brand-mark" aria-label="Logo Vendetta"></div>
@@ -1115,9 +1236,20 @@ function syncThemeIcon(){
   const light=document.documentElement.dataset.theme==='light';
   const icon=document.getElementById('themeIcon');
   const toggle=document.getElementById('themeToggle');
+  const loginIcon=document.getElementById('loginThemeIcon');
+  const loginToggle=document.getElementById('loginThemeToggle');
   if(icon) icon.textContent=light?'☀':'☾';
   if(toggle) toggle.setAttribute('aria-label',light?'Ativar modo escuro':'Ativar modo claro');
+  if(loginIcon) loginIcon.textContent=light?'☀':'☾';
+  if(loginToggle) loginToggle.setAttribute('aria-label',light?'Ativar modo escuro':'Ativar modo claro');
 }
+function toggleTheme(){
+  const next=document.documentElement.dataset.theme==='light'?'dark':'light';
+  document.documentElement.dataset.theme=next;
+  localStorage.setItem('vendetta_theme',next);
+  syncThemeIcon();
+}
+document.getElementById('loginThemeToggle').onclick=toggleTheme;
 document.getElementById('themeToggle').onclick=()=>{
   const next=document.documentElement.dataset.theme==='light'?'dark':'light';
   document.documentElement.dataset.theme=next;
